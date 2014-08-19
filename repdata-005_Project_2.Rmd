@@ -1,0 +1,83 @@
+---
+title: "Storm data (or something)"
+output: html_document
+---
+
+We load the `dplyr` package for data manipulation and the `ggplot2` package for graphing.
+
+```{r message = FALSE}
+library("dplyr")
+library("ggplot2")
+```
+
+## Synopsis
+
+[at most 10 sentences]
+
+## Data Processing
+
+Despite being a compressed file, `read.csv` has no trouble parsing it.
+
+```{r cache = TRUE}
+storm_data <- read.csv("repdata-data-StormData.csv.bz2", stringsAsFactors = FALSE)
+```
+
+We will `select` only the columns that pertain to our questions:
+
+* `EVTYPE`: the event type,
+* `FATALITIES`: the number of fatalities that resulted,
+* `INJURIES`: the number of injuries that resulted,
+* `PROPDMG`: an estimate for the amount of property damage,
+* `PROPDMGEXP`: a "multiplier" extension for the amount in `PROPDMG`,
+* `CROPDMG`: an estimate for the amount of crop damage, in dollars,
+* `CROPDMGEXP`: a "multiplier" extension for the amount in `CROPDMG`,
+* `REMARKS`: remarks added by the person recording the data.
+
+```{r cache = TRUE}
+storm_data2 <- storm_data %>%
+    select(EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP,
+           CROPDMG, CROPDMGEXP, REMARKS)
+```
+
+In the instructions for storm data preparation (located [here](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)), we read,
+
+>Estimates should be rounded to three significant digits, followed by an alphabetical character signifying the magnitude of the number, i.e., 1.55B for $1,550,000,000. Alphabetical characters used to signify magnitude include “K” for thousands, “M” for millions, and “B” for billions.
+
+Therefore, to get accurate damage estimates, we need to multiply our damages by the appropriate factor.
+
+The bad news is that there is some messiness in the variables `PROPDMGEXP` and `CROPDMGEXP`.
+
+```{r}
+summary(storm_data2$PROPDMGEXP)
+summary(storm_data2$CROPDMGEXP)
+```
+
+The good news is that there aren't many too many cases that have strange entries in this field. One possibiility is that the numerical digits may have been recorded by people assuming that this field was for the power of ten required (i.e., $3000 = 3.00 \times 10^{3}$). This would be especially problematic for our analysis for large powers of 10, indicating dollar figures possibly in the millions or more. We examine these specific entries for clues:
+
+```{r}
+storm_data2 %>%
+    filter(PROPDMGEXP %in% 5:8) %>%
+    select(EVTYPE, PROPDMG, PROPDMGEXP, REMARKS) %>%
+    arrange(PROPDMGEXP)
+```
+
+
+To begin with, the multipliers will make no difference to a bunch of entries where the damage in `PROPDMG` is recorded as 0.0, even though it is clear in most of the accompanying remarks that there was, indeed, damage. But even for those cases with nonzero figures, the remarks are not easy to reconcile to the figures. For example, the entry labeled `## 2` in the output above mentions several destroyed buildings including a home valued at $250,000 to $300,000. However, the propery damage is recorded as PROPDMG = 1.7 and PROPDMGEXP = 5. Note that $1.7 \times 10^5$ is 170,000, nowhere near high enough. Similar problems exist in trying to reconcile most of the other damage figures above with remarks that seem off by orders of magnitude.
+
+Given the small number of cases involved here, it seems best to ignore the mysterious entries and focus on the cases with "k", "K", "m", "M", and "B".
+
+```{r}
+PROPDMGEXP_value <- sapply(storm_data2$PROPDMGEXP,
+    function(x) {switch(x,  "k" = 1000, "K" = 1000,
+                            "m" = 1000000, "M" = 1000000, 
+                            "B" = 1000000000, 1)})
+storm_data3 <- storm_data2 %>%
+    mutate(PROPDMG_value = PROPDMGEXP_value,
+            PROPDMG_actual = PROPDMG * PROPDMG_value)
+```
+
+
+
+
+## Results
+
