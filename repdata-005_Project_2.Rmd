@@ -122,12 +122,12 @@ The good news is that there aren't many too many cases that have strange entries
 ```{r}
 storm_data %>%
     filter(PROPDMGEXP %in% 5:8) %>%
-    select(EVTYPE, PROPDMG, PROPDMGEXP, REMARKS) %>%
+    select(EVTYPE, PROPDMG, PROPDMGEXP) %>%
     arrange(PROPDMGEXP)
 ```
 
 
-To begin with, the multipliers will make no difference to a bunch of entries where the damage in `PROPDMG` is recorded as 0.0, even though it is clear in most of the accompanying remarks that there was, indeed, damage. But even for those cases with nonzero figures, the remarks are not easy to reconcile to the figures. For example, the entry labeled `## 2` in the output above mentions several destroyed buildings including a home valued at $250,000 to $300,000. However, the propery damage is recorded as PROPDMG = 1.7 and PROPDMGEXP = 5. Note that $1.7 \times 10^5$ is 170,000, nowhere near high enough. Similar problems exist in trying to reconcile most of the other damage figures above with remarks that seem off by orders of magnitude.
+To begin with, the multipliers will make no difference to a bunch of entries where the damage in `PROPDMG` is recorded as 0.0, even though it is clear in most of the accompanying remarks that there was, indeed, damage. (I have not printed the remarks here because they are not fomatted very nicely.) But even for those cases with nonzero figures, the remarks are not easy to reconcile to the figures. For example, the entry labeled `## 2` in the output above mentions several destroyed buildings including a home valued at $250,000 to $300,000. However, the propery damage is recorded as PROPDMG = 1.7 and PROPDMGEXP = 5. Note that $1.7 \times 10^5$ is 170,000, nowhere near high enough. Similar problems exist in trying to reconcile most of the other damage figures above with remarks that seem off by orders of magnitude.
 
 Given the relatively small number of cases involved here, it seems best to ignore the mysterious entries and focus on the cases with "k", "K", "m", "M", and "B". (Anything else will get assigned to 1 so that the multiplier causes no change in the value.) We will do this with `PROPDMG` and `CROPDMG`.
 
@@ -167,7 +167,7 @@ storm_impact <- storm_data %>%
 ```
 
 
-Simple tables suffice here. We look at the top 10 events that have caused the most fatalities and injuries respectively.
+Simple tables suffice here. We look at the top ten events that have caused the most fatalities and injuries respectively.
 
 ```{r results = 'asis'}
 storm_impact %>%
@@ -184,7 +184,7 @@ storm_impact %>%
     knitr::kable("markdown", align = c('l', 'r'))
 ```
 
-It is clear that tornadoes are by far the most destructive natural force when it comes to safety and human life.
+We can see that there is some overlap in the categories. For example, one could argue that "HEAT" and "EXCESSIVE HEAT" could be counted as one category for purposes of assessing impact on human suffering. "THUNDERSTORM WIND" and "TSTM WIND" are exactly the same thing. (Some data recorders abbreviated and others did not.) Nevertheless, even when combining like categories, it is clear that tornadoes are by far the most destructive natural force when it comes to safety and human life.
 
 ```{r message = FALSE}
 tornadoes <- storm_data %>%
@@ -202,7 +202,7 @@ g2 <- ggplot(tornadoes, aes(x = Year, y = Injuries)) +
 multiplot(g1, g2)
 ```
 
-The figure shows that there are specific years in which tornadoes are particularly devastating. In particular, 2011 was one of the worst years on record. (See [this Wikipedia page](https://en.wikipedia.org/wiki/April_25%E2%80%9328,_2011_tornado_outbreak#April_27_event).)
+The figure shows two interesting things. One is that there are specific years in which tornadoes are particularly devastating. Note that 2011 was one of the worst years on record. (See [this Wikipedia page](https://en.wikipedia.org/wiki/April_25%E2%80%9328,_2011_tornado_outbreak#April_27_event).) The other observation is that there is a clear change in the magnitude of the effect in the more severe years before and after the 1970s. This is due to the widespread adoption around 1970 of using air raid sirens as tornado warnings. (See the [paper by Coleman et al.](http://journals.ametsoc.org/doi/pdf/10.1175/2010BAMS3062.1))
 
 ### 2. Across the United States, which types of events have the greatest economic consequences?
 
@@ -224,4 +224,4 @@ storm_impact %>%
     knitr::kable("markdown", align = c('l', 'r'))
 ```
 
-There is a difference in the weather event taking the top spot for property damage versus crop damage.  Floods cause more than double the amount of property damage than the next highest event (hurricane/typhoon). Flooding also causes a lot of crop damage, but drought is more than twice as damaging to crops.
+There is a difference in the weather event taking the top spot for property damage versus crop damage.  Floods cause more than double the amount of property damage than the next highest event (hurricane/typhoon). Flooding also causes a lot of crop damage, but drought is the most deleterious.
